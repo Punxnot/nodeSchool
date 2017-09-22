@@ -1,7 +1,11 @@
 const express = require('express');
 const app = express();
+const fs = require('fs');
+const bodyParser = require('body-parser');
 
 app.use(express.static('public'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
 	res.send(`<!doctype html>
@@ -17,6 +21,42 @@ app.get('/', (req, res) => {
 
 app.get('/error', (req, res) => {
 	throw Error('Oops!');
+});
+
+app.get('/cards', (req, res) => {
+	fs.readFile('source/cards.json', 'utf8', function (err, data) {
+	  if (err) throw err;
+	  const obj = JSON.parse(data);
+		res.send(obj);
+	});
+});
+
+app.post('/cards', function(req, res) {
+	req.headers['content-type'] = 'application/json';
+	fs.readFile('source/cards.json', 'utf8', function (err, data) {
+	  if (err) throw err;
+	  let existed = JSON.parse(data);
+		existed.push(req.body);
+		existed = JSON.stringify(existed);
+		fs.writeFile("source/cards.json", existed);
+		res.send("The file was saved!");
+	});
+});
+
+app.delete('/cards/:id', (req, res) => {
+	req.headers['content-type'] = 'application/json';
+	fs.readFile('source/cards.json', 'utf8', function (err, data) {
+	  if (err) throw err;
+	  let existed = JSON.parse(data);
+		if (existed[req.params.id]) {
+			existed.splice(req.params.id, 1);
+			existed = JSON.stringify(existed);
+			fs.writeFile("source/cards.json", existed);
+			res.send("The file was deleted!");
+		} else {
+			res.status(404).send('404 Card not found');
+		}
+	});
 });
 
 app.get('/transfer', (req, res) => {
