@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const bodyParser = require('body-parser');
+const validator = require('./libs/validate-credit-card');
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
@@ -36,10 +37,15 @@ app.post('/cards', function(req, res) {
 	fs.readFile('source/cards.json', 'utf8', function (err, data) {
 	  if (err) throw err;
 	  let existed = JSON.parse(data);
-		existed.push(req.body);
-		existed = JSON.stringify(existed);
-		fs.writeFile("source/cards.json", existed);
-		res.send("The file was saved!");
+		// Check if the card number is valid
+		if (validator.validateCreditCard(req.body.cardNumber)) {
+			existed.push(req.body);
+			existed = JSON.stringify(existed);
+			fs.writeFile("source/cards.json", existed);
+			res.send("The file was saved!");
+		} else {
+			res.status(400).send('Card number not valid');
+		}
 	});
 });
 
