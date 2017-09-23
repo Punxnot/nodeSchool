@@ -8,6 +8,15 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+const readFile = (file) => {
+	return new Promise((resolve, reject) => {
+		fs.readFile(file, 'utf8', function (err, data) {
+		  if (err) reject(err);
+		  resolve(JSON.parse(data));
+		});
+  });
+};
+
 app.get('/', (req, res) => {
 	res.send(`<!doctype html>
 	<html>
@@ -25,18 +34,16 @@ app.get('/error', (req, res) => {
 });
 
 app.get('/cards', (req, res) => {
-	fs.readFile('source/cards.json', 'utf8', function (err, data) {
-	  if (err) throw err;
-	  const obj = JSON.parse(data);
-		res.send(obj);
-	});
+	readFile('source/cards.json').then((existed) => {
+		res.send(existed);
+	}, (reason) => {
+		throw reason;
+	})
 });
 
 app.post('/cards', function(req, res) {
 	req.headers['content-type'] = 'application/json';
-	fs.readFile('source/cards.json', 'utf8', function (err, data) {
-	  if (err) throw err;
-	  let existed = JSON.parse(data);
+	readFile('source/cards.json').then((existed) => {
 		// Check if the card number is valid
 		if (validator.validateCreditCard(req.body.cardNumber)) {
 			existed.push(req.body);
@@ -44,24 +51,26 @@ app.post('/cards', function(req, res) {
 			fs.writeFile("source/cards.json", existed);
 			res.send("The file was saved!");
 		} else {
-			res.status(400).send('Card number not valid');
+			res.status(400).send('400 Card number not valid');
 		}
+	}, (reason) => {
+		throw reason;
 	});
 });
 
 app.delete('/cards/:id', (req, res) => {
 	req.headers['content-type'] = 'application/json';
-	fs.readFile('source/cards.json', 'utf8', function (err, data) {
-	  if (err) throw err;
-	  let existed = JSON.parse(data);
-		if (existed[req.params.id]) {
-			existed.splice(req.params.id, 1);
-			existed = JSON.stringify(existed);
-			fs.writeFile("source/cards.json", existed);
-			res.send("The file was deleted!");
-		} else {
-			res.status(404).send('404 Card not found');
-		}
+	readFile('source/cards.json').then((existed) => {
+			if (existed[req.params.id]) {
+				existed.splice(req.params.id, 1);
+				existed = JSON.stringify(existed);
+				fs.writeFile("source/cards.json", existed);
+				res.send("The card was deleted!");
+			} else {
+				res.status(404).send('404 Card not found');
+			}
+	}, (reason) => {
+		throw reason;
 	});
 });
 
