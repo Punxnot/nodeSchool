@@ -1,6 +1,4 @@
-module.exports = exports = {};
-
-exports.validateCreditCard = function(value) {
+function validateCreditCard(value) {
   // accept only digits, dashes or spaces
 	if (/[^0-9-\s]+/.test(value)) return false;
 
@@ -22,3 +20,5 @@ exports.validateCreditCard = function(value) {
 
 	return (nCheck % 10) == 0;
 }
+
+exports.validateCreditCard = validateCreditCard;

@@ -8,10 +8,15 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use((err, req, res, next) => {
+    console.log(err);
+    res.status(500).send('Error!');
+})
+
 const readFile = (file) => {
 	return new Promise((resolve, reject) => {
 		fs.readFile(file, 'utf8', function (err, data) {
-		  if (err) reject(err);
+		  if (err) return reject(err);
 		  resolve(JSON.parse(data));
 		});
   });
