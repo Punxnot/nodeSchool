@@ -14,7 +14,7 @@ app.use(serve(__dirname + '/public'));
 
 const readFile = (file) => {
 	return new Promise((resolve, reject) => {
-		fs.readFile(file, 'utf8', function (err, data) {
+		fs.readFile(file, 'utf8', (err, data) => {
 		  if (err) return reject(err);
 		  resolve(JSON.parse(data));
 		});
@@ -42,15 +42,15 @@ router.get('/', (ctx) => {
 	</html>`;
 });
 
-router.get('/cards', async function (ctx) {
+router.get('/cards', async (ctx) => {
   ctx.body = await readFile('source/cards.json');
 });
 
-router.get('/error', async function (ctx) {
+router.get('/error', async (ctx) => {
 	throw new Error('Oops!');
 });
 
-router.post('/cards', async function (ctx) {
+router.post('/cards', async (ctx) => {
 	try {
 		// Check if the card number is valid
 		if (validator.validateCreditCard(ctx.request.body.cardNumber)) {
@@ -69,7 +69,7 @@ router.post('/cards', async function (ctx) {
 	}
 });
 
-router.delete('/cards/:id', async function (ctx) {
+router.delete('/cards/:id', async (ctx) => {
 	try {
 		let content = await readFile('source/cards.json');
 		if (content[ctx.params.id]) {
@@ -85,7 +85,7 @@ router.delete('/cards/:id', async function (ctx) {
 	}
 });
 
-router.get('/transfer', async function (ctx) {
+router.get('/transfer', async (ctx) => {
 	try {
 		let content = await readFile('source/cards.json');
 		const {amount, from, to} = ctx.request.query;
