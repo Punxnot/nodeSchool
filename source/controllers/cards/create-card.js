@@ -1,7 +1,7 @@
 'use strict';
 
-const CardsModel = require('../models/cards');
-const validator = require('../../libs/validate-credit-card');
+const CardsModel = require('../../models/cards');
+const validator = require('../../../libs/validate-credit-card');
 
 module.exports = (ctx) => {
 	const card = ctx.request.body;

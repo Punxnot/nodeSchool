@@ -1,10 +1,10 @@
 'use strict';
 
-const TransactionModel = require('../models/transactions');
+const TransactionModel = require('../../models/transactions');
 const validTypes = ["paymentMobile", "prepaidCard", "card2Card"];
 
 const isTransactionValid = (transactionData) => {
-  return transactionData && transactionData.hasOwnProperty('cardId') && transactionData.hasOwnProperty('type') && transactionData.hasOwnProperty('data') && transactionData.hasOwnProperty('time') && transactionData.hasOwnProperty('sum') && validTypes.indexOf(transactionData.type) >= 0;
+  return transactionData && transactionData.hasOwnProperty('type') && transactionData.hasOwnProperty('data') && transactionData.hasOwnProperty('time') && transactionData.hasOwnProperty('sum') && validTypes.indexOf(transactionData.type) >= 0;
 };
 
 module.exports = async (ctx) => {
@@ -12,6 +12,7 @@ module.exports = async (ctx) => {
 	try {
 		if (isTransactionValid(transactionData)) {
 			const transactionModel = new TransactionModel();
+      transactionData.cardId = ctx.params.id;
 			const newTransaction = await transactionModel.create(transactionData);
 			ctx.body = "Transaction was saved";
 		} else {

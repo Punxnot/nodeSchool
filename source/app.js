@@ -6,14 +6,14 @@ const Router = require('koa-router');
 const serve = require('koa-static');
 const fs = require('fs');
 const validator = require('../libs/validate-credit-card');
-const getCardsController = require('./controllers/get-cards');
-const createCardController = require('./controllers/create-card');
-const deleteCardController = require('./controllers/delete-card');
+const getCardsController = require('./controllers/cards/get-cards');
+const createCardController = require('./controllers/cards/create-card');
+const deleteCardController = require('./controllers/cards/delete-card');
+const transferController = require('./controllers/cards/transfer');
 const errorController = require('./controllers/error');
-const transferController = require('./controllers/transfer');
 
-const getTransactionsController = require('./controllers/get-transactions');
-const createTransactionController = require('./controllers/create-transaction');
+const getTransactionsController = require('./controllers/transactions/get-transactions');
+const createTransactionController = require('./controllers/transactions/create-transaction');
 
 const app = new Koa();
 const router = new Router();
