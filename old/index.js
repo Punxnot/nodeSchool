@@ -1,29 +1,37 @@
-const express = require('express');
-const app = express();
+const Koa = require('koa');
+const bodyParser = require('koa-bodyparser')();
+const Router = require('koa-router');
+const serve = require('koa-static');
 const fs = require('fs');
-const bodyParser = require('body-parser');
 const validator = require('./libs/validate-credit-card');
 
-app.use(express.static('public'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+const app = new Koa();
+const router = new Router();
 
-app.use((err, req, res, next) => {
-    console.log(err);
-    res.status(500).send('Error!');
-});
+app.use(bodyParser);
+app.use(router.routes());
+app.use(serve(__dirname + '/public'));
 
 const readFile = (file) => {
 	return new Promise((resolve, reject) => {
-		fs.readFile(file, 'utf8', function (err, data) {
+		fs.readFile(file, 'utf8', (err, data) => {
 		  if (err) return reject(err);
 		  resolve(JSON.parse(data));
 		});
   });
 };
 
-app.get('/', (req, res) => {
-	res.send(`<!doctype html>
+const checkCard = (cardsList, cardNumber) => {
+	for (let i=0; i<cardsList.length; i++) {
+		if (cardsList[i].cardNumber === cardNumber) {
+			return i;
+		}
+	}
+	return false;
+};
+
+router.get('/', (ctx) => {
+	ctx.body = `<!doctype html>
 	<html>
 		<head>
 			<link rel="stylesheet" href="/style.css">
@@ -31,62 +39,72 @@ app.get('/', (req, res) => {
 		<body>
 			<h1>Hello Smolny!</h1>
 		</body>
-	</html>`);
+	</html>`;
 });
 
-app.get('/error', (req, res) => {
-	throw Error('Oops!');
+router.get('/cards', async (ctx) => {
+  ctx.body = await readFile('source/cards.json');
 });
 
-app.get('/cards', (req, res) => {
-	readFile('source/cards.json').then((existed) => {
-		res.send(existed);
-	}, (reason) => {
-		throw reason;
-	})
+router.get('/error', async (ctx) => {
+	throw new Error('Oops!');
 });
 
-app.post('/cards', function(req, res) {
-	req.headers['content-type'] = 'application/json';
-	readFile('source/cards.json').then((existed) => {
+router.post('/cards', async (ctx) => {
+	try {
 		// Check if the card number is valid
-		if (validator.validateCreditCard(req.body.cardNumber)) {
-			existed.push(req.body);
-			existed = JSON.stringify(existed);
-			fs.writeFile("source/cards.json", existed);
-			res.send("The file was saved!");
+		if (validator.validateCreditCard(ctx.request.body.cardNumber)) {
+			let content = await readFile('source/cards.json');
+			content.push(ctx.request.body);
+			content = JSON.stringify(content);
+			fs.writeFile("source/cards.json", content);
+			ctx.body = "File was saved";
 		} else {
-			res.status(400).send('400 Card number not valid');
+			const err = new Error('Card number not valid');
+  		ctx.status = 400;
+			ctx.body = "400 Card number not valid";
 		}
-	}, (reason) => {
-		throw reason;
-	});
+	} catch (err) {
+		throw new Error(err);
+	}
 });
 
-app.delete('/cards/:id', (req, res) => {
-	req.headers['content-type'] = 'application/json';
-	readFile('source/cards.json').then((existed) => {
-			if (existed[req.params.id]) {
-				existed.splice(req.params.id, 1);
-				existed = JSON.stringify(existed);
-				fs.writeFile("source/cards.json", existed);
-				res.send("The card was deleted!");
-			} else {
-				res.status(404).send('404 Card not found');
-			}
-	}, (reason) => {
-		throw reason;
-	});
+router.delete('/cards/:id', async (ctx) => {
+	try {
+		let content = await readFile('source/cards.json');
+		if (content[ctx.params.id]) {
+			content.splice(ctx.params.id, 1);
+			content = JSON.stringify(content);
+			fs.writeFile("source/cards.json", content);
+			ctx.body = "The card was deleted!";
+		} else {
+			res.status(404).send('404 Card not found');
+		}
+	} catch (err) {
+		throw new Error(err);
+	}
 });
 
-app.get('/transfer', (req, res) => {
-	const {amount, from, to} = req.query;
-	res.json({
-		result: 'success',
-		amount,
-		from,
-		to
-	});
+router.get('/transfer', async (ctx) => {
+	try {
+		let content = await readFile('source/cards.json');
+		const {amount, from, to} = ctx.request.query;
+		const cardInd1 = checkCard(content, from);
+		const cardInd2 = checkCard(content, to);
+		if (cardInd1 >= 0 && cardInd2 >= 0 && parseInt(amount)) {
+			content[cardInd1].balance = parseInt(content[cardInd1].balance) - parseInt(amount) + "";
+			content[cardInd2].balance = parseInt(content[cardInd2].balance) + parseInt(amount) + "";
+			content = JSON.stringify(content);
+			fs.writeFile("source/cards.json", content);
+			ctx.body = `Success: $${amount} was transfered from card ${from} to card ${to}`;
+		} else {
+			const err = new Error('Invalid data');
+  		ctx.status = 400;
+			ctx.body = "400 No such card/cards or the amount is zero";
+		}
+	} catch (err) {
+		throw new Error(err);
+	}
 });
 
 app.listen(3000, () => {
