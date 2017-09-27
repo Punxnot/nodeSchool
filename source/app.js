@@ -12,6 +12,9 @@ const deleteCardController = require('./controllers/delete-card');
 const errorController = require('./controllers/error');
 const transferController = require('./controllers/transfer');
 
+const getTransactionsController = require('./controllers/get-transactions');
+const createTransactionController = require('./controllers/create-transaction');
+
 const app = new Koa();
 const router = new Router();
 
@@ -37,6 +40,9 @@ router.post('/cards', createCardController);
 router.delete('/cards/:id', deleteCardController);
 router.all('/error', errorController);
 router.get('/transfer', transferController);
+
+router.get('/cards/:id/transactions', getTransactionsController);
+router.post('/cards/:id/transactions', createTransactionController);
 
 app.listen(3000, () => {
 	console.log('YM Node School App listening on port 3000!');
