@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "ssh://git@github.com:rakchaev/node-school-app.git"
+    "url": "ssh://git@github.com:Punxnot/nodeSchool.git"
   },
   "license": "ISC",
   "engines": {
