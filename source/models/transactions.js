@@ -1,31 +1,43 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const ApplicationError = require('../../libs/application-error');
-const DATA_SOURCE = path.join(__dirname, '..', 'transactions.json');
+const ApplicationError = require('libs/application-error');
 
-class Transactions {
-	constructor () {
-		this._dataSource = require(DATA_SOURCE);
+const FileModel = require('./common/fileModel');
+
+class Transactions extends FileModel {
+	constructor() {
+		super('transactions.json');
 	}
 
-	get (cardId) {
-    const result = this._dataSource.filter((item) => {
-			return item.cardId == cardId;
+	/**
+	 * Добавляет новую транзакцию
+	 *
+	 * @param {Object} transaction описание транзакции
+	 * @returns {Promise.<Object>}
+	 */
+	async create(transaction) {
+		const newTransaction = Object.assign({}, transaction, {
+			id: this._generateId()
 		});
-		return result;
+		this._dataSource.push(newTransaction);
+		await this._saveUpdates();
+		return newTransaction;
 	}
 
-	create (transactionData) {
-    transactionData.id = this._dataSource.length + 1;
-    this._dataSource.push(transactionData);
-    this._saveUpdates();
-    return transactionData;
+	/**
+	 * Получает транзакции по идентификатору карты
+	 * @param {Number} cardId Идентификатор карты
+	 * @return {Promise.<Object[]>}
+	 */
+	async getByCard(cardId) {
+		return this._dataSource.filter((transaction) => transaction.cardId === cardId);
 	}
 
-	async _saveUpdates () {
-		await fs.writeFile(DATA_SOURCE, JSON.stringify(this._dataSource, null, 4));
+	/**
+	 * Удаление транзакции
+	 */
+	static async remove() {
+		throw new ApplicationError('Transaction can\'t be removed', 400);
 	}
 }
 

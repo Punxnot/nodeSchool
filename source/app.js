@@ -1,49 +1,105 @@
+
 'use strict';
 
+const path = require('path');
 const Koa = require('koa');
-const bodyParser = require('koa-bodyparser')();
-const Router = require('koa-router');
 const serve = require('koa-static');
-const fs = require('fs');
-const validator = require('../libs/validate-credit-card');
+const router = require('koa-router')();
+const bodyParser = require('koa-bodyparser');
+
+const {renderToStaticMarkup} = require('react-dom/server');
+
 const getCardsController = require('./controllers/cards/get-cards');
-const createCardController = require('./controllers/cards/create-card');
-const deleteCardController = require('./controllers/cards/delete-card');
-const transferController = require('./controllers/cards/transfer');
+const createCardController = require('./controllers/cards/create');
+const deleteCardController = require('./controllers/cards/delete');
+const payByCardController = require('./controllers/cards/pay-by-card');
+const getTransactionsController = require('./controllers/transactions/get');
+const createTransactionsController = require('./controllers/transactions/create');
+
 const errorController = require('./controllers/error');
 
-const getTransactionsController = require('./controllers/transactions/get-transactions');
-const createTransactionController = require('./controllers/transactions/create-transaction');
+const ApplicationError = require('libs/application-error');
+const CardsModel = require('source/models/cards');
+const TransactionsModel = require('source/models/transactions');
 
 const app = new Koa();
-const router = new Router();
 
-app.use(bodyParser);
-app.use(router.routes());
-app.use(serve(__dirname + '/public'));
+const DATA = {
+	user: {
+		login: 'samuel_johnson',
+		name: 'Samuel Johnson'
+	}
+};
 
+function getView(viewId) {
+	const viewPath = path.resolve(__dirname, 'views', `${viewId}.server.js`);
+	return require(viewPath);
+}
+
+const logger = require('../libs/logger.js')('wallet-app');
+
+// Сохраним параметр id в ctx.params.id
+router.param('id', (id, ctx, next) => next());
 
 router.get('/', (ctx) => {
-	ctx.body = `<!doctype html>
-	<html>
-		<head>
-			<link rel="stylesheet" href="/style.css">
-		</head>
-		<body>
-			<h1>Hello Smolny!</h1>
-		</body>
-	</html>`;
+	const indexView = getView('index');
+	const indexViewHtml = renderToStaticMarkup(indexView(DATA));
+	ctx.body = indexViewHtml;
 });
 
-router.get('/cards', getCardsController);
-router.post('/cards', createCardController);
+router.get('/cards/', getCardsController);
+router.post('/cards/', createCardController);
 router.delete('/cards/:id', deleteCardController);
-router.all('/error', errorController);
-router.get('/transfer', transferController);
 
-router.get('/cards/:id/transactions', getTransactionsController);
-router.post('/cards/:id/transactions', createTransactionController);
+router.get('/cards/:id/transactions/', getTransactionsController);
+router.post('/cards/:id/transactions/', createTransactionsController);
+
+router.post('/card/:id/pay', payByCardController);
+
+router.all('/error', errorController);
+
+// logger
+app.use(async (ctx, next) => {
+	const start = new Date();
+	await next();
+	const ms = new Date() - start;
+	console.log(`${ctx.method} ${ctx.url} - ${ms}ms`);
+});
+
+// error handler
+app.use(async (ctx, next) => {
+	try {
+		await next();
+	} catch (err) {
+		console.log('Error detected', err);
+		ctx.status = err instanceof ApplicationError ? err.status : 500;
+		ctx.body = `Error [${err.message}] :(`;
+	}
+});
+
+// Создадим модель Cards и Transactions на уровне приложения и проинициализируем ее
+app.use(async (ctx, next) => {
+	ctx.cardsModel = new CardsModel();
+	ctx.transactionsModel = new TransactionsModel();
+
+	await Promise.all([
+		ctx.cardsModel.loadFile(),
+		ctx.transactionsModel.loadFile()
+	]);
+
+	await next();
+});
+
+app.use(bodyParser(
+	{
+	  extendTypes: {
+	    json: ['application/x-javascript']
+	  }
+	}
+));
+app.use(router.routes());
+app.use(serve('./public'));
 
 app.listen(3000, () => {
-	console.log('YM Node School App listening on port 3000!');
+	logger.log('info', 'Application started');
 });

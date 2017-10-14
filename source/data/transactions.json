@@ -1,0 +1,50 @@
+[
+    {
+        "type": "paymentMobile",
+        "sum": "300",
+        "data": "+79218908064",
+        "cardId": 1,
+        "time": "2017-10-11T18:51:31.529Z",
+        "id": 1
+    },
+    {
+        "type": "paymentMobile",
+        "sum": "765",
+        "data": "+79218908064",
+        "cardId": 6,
+        "time": "2017-10-11T19:33:40.452Z",
+        "id": 2
+    },
+    {
+        "type": "paymentMobile",
+        "sum": "654",
+        "data": "+79218908064",
+        "cardId": 2,
+        "time": "2017-10-11T19:54:39.806Z",
+        "id": 3
+    },
+    {
+        "type": "paymentMobile",
+        "sum": "54",
+        "data": "+79218908064",
+        "cardId": 5,
+        "time": "2017-10-11T21:24:29.561Z",
+        "id": 4
+    },
+    {
+        "type": "paymentMobile",
+        "sum": "6",
+        "data": "+79218908064",
+        "cardId": 6,
+        "time": "2017-10-11T21:24:48.755Z",
+        "id": 5
+    },
+    {
+        "type": "paymentMobile",
+        "sum": "98",
+        "data": "+79218908064",
+        "cardId": 4,
+        "time": "2017-10-14T20:07:32.550Z",
+        "id": 6
+    }
+]

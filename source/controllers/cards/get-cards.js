@@ -1,5 +1,5 @@
 'use strict';
 
-const CardsModel = require('../../models/cards');
-
-module.exports = (ctx) => ctx.body = new CardsModel().getAll();
+module.exports = async (ctx) => {
+	ctx.body = await ctx.cardsModel.getAll();
+};

@@ -1,61 +1,86 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const ApplicationError = require('libs/application-error');
 
-const ApplicationError = require('../../libs/application-error');
+const FileModel = require('./common/fileModel');
 
-const DATA_SOURCE = path.join(__dirname, '..', 'cards.json');
-
-class Cards {
-	constructor () {
-		this._dataSource = require(DATA_SOURCE);
+class Cards extends FileModel {
+	constructor() {
+		super('cards.json');
 	}
 
-	getAll () {
-		return this._dataSource;
-	}
+	/**
+	 * Adds a new card
+	 *
+	 * @param {Object} card card details
+	 * @returns {Promise.<Object>}
+	 */
+	async create(card) {
+		const isDataValid = card
+			&& Object.prototype.hasOwnProperty.call(card, 'cardNumber')
+			&& Object.prototype.hasOwnProperty.call(card, 'balance');
 
-	create (card) {
-		const isDataValid = card && card.hasOwnProperty('cardNumber') && card.hasOwnProperty('balance');
 		if (isDataValid) {
-			card.id = this._dataSource.length + 1;
-			this._dataSource.push(card);
-			this._saveUpdates();
-			return card;
-		} else {
-			throw new ApplicationError('Card data is invalid', 400);
+			const newCard = Object.assign({}, card, {
+				id: this._generateId()
+			});
+
+			this._dataSource.push(newCard);
+			await this._saveUpdates();
+			return newCard;
 		}
+
+		throw new ApplicationError('Card data is invalid', 400);
 	}
 
-	remove (id) {
-		const card = this._dataSource.find((item) => {
-			return item.id == id;
-		});
-
+	/**
+	 * Deletes a card
+	 * @param {Number} id card id
+	 */
+	async remove(id) {
+		const card = await this.get(id);
 		if (!card) {
 			throw new ApplicationError(`Card with ID=${id} not found`, 404);
 		}
-
 		const cardIndex = this._dataSource.indexOf(card);
 		this._dataSource.splice(cardIndex, 1);
-		this._saveUpdates();
+		await this._saveUpdates();
 	}
+	
+	/**
+	 * Transfers money from one card to another
+	 * @param {Number} amount amount to transfer
+	 * @param {Number} id from-card id
+	 * @param {Number} id to-card id
+	 */
+	// transfer (amount, from, to) {
+	//   const fromCard = this._dataSource.find((item) => {
+	//     return item.cardNumber == from;
+	//   });
+	//   const toCard = this._dataSource.find((item) => {
+	//     return item.cardNumber == to;
+	//   });
+	//   fromCard.balance = parseInt(fromCard.balance) - parseInt(amount) + "";
+	//   toCard.balance = parseInt(toCard.balance) + parseInt(amount) + "";
+	//   await this._saveUpdates();
+	// }
 
-  transfer (amount, from, to) {
-    const fromCard = this._dataSource.find((item) => {
-			return item.cardNumber == from;
-		});
-    const toCard = this._dataSource.find((item) => {
-			return item.cardNumber == to;
-		});
-    fromCard.balance = parseInt(fromCard.balance) - parseInt(amount) + "";
-    toCard.balance = parseInt(toCard.balance) + parseInt(amount) + "";
-    this._saveUpdates();
-  }
-
-	async _saveUpdates () {
-		await fs.writeFile(DATA_SOURCE, JSON.stringify(this._dataSource, null, 4));
+	/**
+	 * Withdraws an amount from a card
+	 * @param {Number} id card id
+	 * @param {Number} amount amount to withdraw
+	 */
+	async payBy(id, amount) {
+		const card = await this.get(id);
+		if (!card) {
+			throw new ApplicationError(`Card with ID=${id} not found`, 404);
+		} else if (!card.balance || card.balance == "0") {
+			throw new ApplicationError("Zero balance", 401);
+		} else {
+			card.balance = parseInt(card.balance) - parseInt(amount) + "";
+			await this._saveUpdates();
+			return card;
+		}
 	}
 }
 
