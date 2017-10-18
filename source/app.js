@@ -1,4 +1,3 @@
-
 'use strict';
 
 const path = require('path');
@@ -6,6 +5,9 @@ const Koa = require('koa');
 const serve = require('koa-static');
 const router = require('koa-router')();
 const bodyParser = require('koa-bodyparser');
+const https = require('https');
+const fs = require('fs');
+const enforceHttps = require('koa-sslify');
 
 const {renderToStaticMarkup} = require('react-dom/server');
 
@@ -89,6 +91,15 @@ app.use(async (ctx, next) => {
 
 	await next();
 });
+ 
+const options = {
+  key: fs.readFileSync('key.pem'),
+  cert: fs.readFileSync('cert.pem')
+};
+ 
+app.use(enforceHttps({
+  trustProtoHeader: true
+}));
 
 app.use(bodyParser(
 	{
@@ -100,6 +111,6 @@ app.use(bodyParser(
 app.use(router.routes());
 app.use(serve('./public'));
 
-app.listen(3000, () => {
+https.createServer(options, app.callback()).listen(3000, () => {
 	logger.log('info', 'Application started');
 });
