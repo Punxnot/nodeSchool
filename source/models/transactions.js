@@ -2,39 +2,40 @@
 
 const ApplicationError = require('libs/application-error');
 
-const FileModel = require('./common/fileModel');
+const DbModel = require('./common/dbModel');
 
-class Transactions extends FileModel {
+class Transactions extends DbModel {
 	constructor() {
-		super('transactions.json');
+		super('transaction');
 	}
 
 	/**
-	 * Добавляет новую транзакцию
+	 * Adds transaction
 	 *
-	 * @param {Object} transaction описание транзакции
+	 * @param {Object} transaction
 	 * @returns {Promise.<Object>}
 	 */
 	async create(transaction) {
 		const newTransaction = Object.assign({}, transaction, {
-			id: this._generateId()
+			id: await this._generateId()
 		});
-		this._dataSource.push(newTransaction);
-		await this._saveUpdates();
+		
+		await this._insert(newTransaction);
 		return newTransaction;
 	}
 
 	/**
-	 * Получает транзакции по идентификатору карты
-	 * @param {Number} cardId Идентификатор карты
+	 * Gets transactions by card id
+	 * @param {Number} cardId
 	 * @return {Promise.<Object[]>}
 	 */
 	async getByCard(cardId) {
-		return this._dataSource.filter((transaction) => transaction.cardId === cardId);
+		const item = await this.getBy({cardId});
+		return item;
 	}
 
 	/**
-	 * Удаление транзакции
+	 * Deletes transaction by id
 	 */
 	static async remove() {
 		throw new ApplicationError('Transaction can\'t be removed', 400);

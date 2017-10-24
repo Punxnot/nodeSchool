@@ -1,9 +1,18 @@
 /* eslint-disable */
 
 module.exports = {
+	"extends": [
+		"airbnb",
+		"plugin:jest/recommended"
+	],
+	
 	"globals": {
 		"document": true
 	},
+	
+	"plugins": [
+		"jest"
+	],
 
 	"rules": {
 		"strict": 0,

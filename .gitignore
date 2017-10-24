@@ -4,6 +4,7 @@ public/*
 !public/favicon.ico
 source/views/*
 !source/views/*.src.js
+/fixtures/
 node_modules/
 .DS_Store
 Thumbs.db
